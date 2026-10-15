@@ -198,7 +198,7 @@
                     </div>
                 </div>
 
-                <!-- 3. LỊCH SINH HOẠT CHUYÊN MÔN THEO TUẦN (TỰ ĐỘNG CẬP NHẬT NGÀY THÁNG) -->
+                <!-- 3. LỊCH SINH HOẠT CHUYÊN MÔN THEO TUẦN -->
                 <div x-show="activeTab === 'lich'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -299,7 +299,7 @@
                     </div>
                 </div>
 
-                <!-- 5. KHO HỌC LIỆU (TẤT CẢ GIÁO VIÊN ĐỀU CÓ QUYỀN ĐƯA TÀI NGUYÊN LÊN) -->
+                <!-- 5. KHO HỌC LIỆU -->
                 <div x-show="activeTab === 'hoclieu'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <div class="flex justify-between items-center">
@@ -357,7 +357,7 @@
                     </div>
                 </div>
 
-                <!-- 6. PHÂN CÔNG CHUYÊN MÔN & TKB (THIẾT KẾ THEO BẢNG CHUẨN HOÁ) -->
+                <!-- 6. PHÂN CÔNG CHUYÊN MÔN & TKB -->
                 <div x-show="activeTab === 'chuyenmon_tkb'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <div class="flex justify-between items-center">
@@ -435,7 +435,7 @@
                                             </td>
                                             <td class="p-3 text-center bg-indigo-50/30 font-bold text-indigo-700" x-text="getThiDua(gv.HoTen).TongDiem + 'đ'"></td>
                                             <td class="p-4 px-6">
-                                                <select x-model="getThiDua(gv.HoTen).XepLoai" @change="syncSheet('ThiDua', thiDuaData)" :disabled="!isManager()" class="px-3 py-1 border rounded-lg text-xs font-semibold text-indigo-700 bg-white disabled:bg-gray-100 disabled:text-gray-500">
+                                                <select x-model="getThiDua(gv.HoTen).XepLoai" @change="saveThiDua()" :disabled="!isManager()" class="px-3 py-1 border rounded-lg text-xs font-semibold text-indigo-700 bg-white disabled:bg-gray-100 disabled:text-gray-500">
                                                     <option value="Hoàn thành xuất sắc">Hoàn thành xuất sắc</option>
                                                     <option value="Hoàn thành tốt">Hoàn thành tốt</option>
                                                     <option value="Hoàn thành">Hoàn thành</option>
@@ -487,7 +487,7 @@
                 </div>
 
                 <!-- 9. CÀI ĐẶT ĐỒNG BỘ -->
-                <div x-show="activeTab === 'settings'" class="space-y-6 max-w-xl mx-auto pt-6" x-show="isManager()">
+                <div x-show="activeTab === 'settings' && isManager()" class="space-y-6 max-w-xl mx-auto pt-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-indigo-100 space-y-4">
                         <h3 class="text-base font-bold text-gray-900">Kết nối Google Sheets Trực tuyến</h3>
                         <p class="text-sm text-gray-600">Dán đường dẫn Web App (Google Apps Script URL) để đồng bộ đa thiết bị.</p>
@@ -550,7 +550,7 @@
                 ],
                 newCM: { GiaoVien: '', NhiemVu: '', TKB: '' },
 
-                thiDuaData: {},
+                thiDuaData: [],
 
                 initApp() {
                     this.setDefaultMonday();
@@ -562,7 +562,7 @@
                 setDefaultMonday() {
                     const d = new Date();
                     const day = d.getDay();
-                    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Lấy thứ 2 đầu tuần
+                    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
                     const monday = new Date(d.setDate(diff));
                     this.selectedMonday = monday.toISOString().split('T')[0];
                 },
@@ -594,7 +594,6 @@
                     const targetDay = this.weekDays.find(d => d.thu === this.newLich.Thu);
                     if (!targetDay) return;
 
-                    // Xóa lịch cũ của ngày đó nếu có rồi ghi đè
                     this.lichSinhHoat = this.lichSinhHoat.filter(x => x.Ngay !== targetDay.ngayStr);
                     this.lichSinhHoat.push({
                         Thu: targetDay.thu,
@@ -670,18 +669,24 @@
                 },
 
                 getThiDua(hoTen) {
-                    if (!this.thiDuaData[this.selectedThang]) this.thiDuaData[this.selectedThang] = {};
-                    if (!this.thiDuaData[this.selectedThang][hoTen]) {
-                        this.thiDuaData[this.selectedThang][hoTen] = { ThaoGiang: 23, HoSo: 24, NhiemVu: 28, KyLuat: 19, TongDiem: 94, XepLoai: 'Hoàn thành xuất sắc' };
+                    if (!Array.isArray(this.thiDuaData)) this.thiDuaData = [];
+                    let found = this.thiDuaData.find(x => x.Thang === this.selectedThang && x.HoTen === hoTen);
+                    if (!found) {
+                        found = { Thang: this.selectedThang, HoTen: hoTen, ThaoGiang: 23, HoSo: 24, NhiemVu: 28, KyLuat: 19, TongDiem: 94, XepLoai: 'Hoàn thành xuất sắc' };
+                        this.thiDuaData.push(found);
                     }
-                    return this.thiDuaData[this.selectedThang][hoTen];
+                    return found;
                 },
 
                 calcTotal(hoTen) {
                     let td = this.getThiDua(hoTen);
                     td.TongDiem = Number(td.ThaoGiang || 0) + Number(td.HoSo || 0) + Number(td.NhiemVu || 0) + Number(td.KyLuat || 0);
-                    this.syncSheet('ThiDua', this.thiDuaData);
+                    this.saveThiDua();
                     this.updateThiDuaChart();
+                },
+
+                saveThiDua() {
+                    this.syncSheet('ThiDua', this.thiDuaData);
                 },
 
                 addPhanCong() {
@@ -749,7 +754,7 @@
                     fetch(this.syncUrl + '?action=getData')
                         .then(res => res.json())
                         .then(data => {
-                            if(data.NhanSu) {
+                            if(data.NhanSu && data.NhanSu.length > 0) {
                                 this.nhanSu = data.NhanSu.map(item => ({
                                     ...item,
                                     MatKhau: item.MatKhau || item.DienThoai
@@ -761,6 +766,7 @@
                             if(data.ChuyenMonTKB) this.chuyenMonList = data.ChuyenMonTKB;
                             if(data.ThiDua) this.thiDuaData = data.ThiDua;
                             this.updateDashboardChart();
+                            this.updateThiDuaChart();
                         }).catch(err => console.error(err));
                 },
 
