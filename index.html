@@ -17,18 +17,18 @@
 </head>
 <body class="bg-gray-50 text-gray-800" x-data="mathApp()" x-init="initCharts()">
 
-    <!-- MÀN HÌNH ĐĂNG NHẬP -->
+    <!-- MÀN HÌNH ĐĂNG NHẬP BẢO MẬT -->
     <div x-show="!currentUser" class="fixed inset-0 bg-indigo-950 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-indigo-100 text-center">
             <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
-                <i class="fa-solid fa-square-root-variable"></i>
+                <i class="fa-solid fa-lock"></i>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">TỔ TOÁN VTS</h2>
+            <h2 class="text-2xl font-bold text-gray-900">BẢO MẬT TỔ TOÁN VTS</h2>
             <p class="text-xs text-gray-500 mt-1 mb-6">Trường THCS&THPT Võ Thị Sáu</p>
             
             <div class="space-y-4 text-left">
                 <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Chọn thành viên đăng nhập:</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Chọn thành viên:</label>
                     <select x-model="selectedLoginName" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-gray-50">
                         <option value="">-- Chọn tên thầy/cô trong tổ --</option>
                         <template x-for="gv in nhanSu" :key="gv.HoTen">
@@ -36,7 +36,12 @@
                         </template>
                     </select>
                 </div>
-                <button @click="login()" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition shadow-md text-sm">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Mật khẩu cá nhân:</label>
+                    <input type="password" x-model="inputPassword" @keyup.enter="login()" placeholder="Nhập mật khẩu..." class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-gray-50">
+                    <p class="text-[11px] text-gray-400 mt-1">Mật khẩu mặc định lần đầu là số điện thoại cá nhân.</p>
+                </div>
+                <button @click="login()" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition shadow-md text-sm mt-2">
                     Đăng nhập hệ thống
                 </button>
             </div>
@@ -76,9 +81,12 @@
                 <button @click="activeTab = 'thidua'; $nextTick(() => updateThiDuaChart())" :class="activeTab === 'thidua' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
                     <i class="fa-solid fa-award w-5 text-center"></i><span>Báo cáo thi đua tháng</span>
                 </button>
+                <button @click="activeTab = 'doimatkhau'" :class="activeTab === 'doimatkhau' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
+                    <i class="fa-solid fa-key w-5 text-center text-amber-400"></i><span>Đổi mật khẩu</span>
+                </button>
                 <div class="pt-4 mt-4 border-t border-indigo-800/80">
                     <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
-                        <i class="fa-solid fa-gear w-5 text-center text-amber-400"></i><span>Cài đặt đồng bộ</span>
+                        <i class="fa-solid fa-gear w-5 text-center"></i><span>Cài đặt đồng bộ</span>
                     </button>
                     <button @click="logout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm text-red-300 hover:bg-red-900/40 mt-1">
                         <i class="fa-solid fa-right-from-bracket w-5 text-center"></i><span>Đăng xuất</span>
@@ -100,7 +108,7 @@
 
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50/70 p-8">
                 
-                <!-- 1. DASHBOARD (CÓ BIỂU ĐỒ TRỰC QUAN) -->
+                <!-- 1. DASHBOARD -->
                 <div x-show="activeTab === 'dashboard'" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex items-center justify-between">
@@ -133,7 +141,6 @@
                         </div>
                     </div>
 
-                    <!-- Khu vực hiển thị biểu đồ trực quan tổng quan -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                             <h3 class="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider">Thống kê học liệu theo Khối lớp (6 - 12)</h3>
@@ -147,8 +154,8 @@
                                 <p class="text-sm text-gray-600 mt-2">Trường THCS&THPT Võ Thị Sáu hoạt động trực tuyến thông suốt qua hệ thống đồng bộ Google Sheets.</p>
                                 <ul class="mt-4 space-y-2 text-sm text-gray-700">
                                     <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Quản lý toàn bộ 10 giáo viên chuẩn xác.</li>
+                                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Bảo mật đăng nhập bằng mật khẩu cá nhân riêng biệt & đổi mật khẩu.</li>
                                     <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Phân quyền chấm điểm thi đua tháng cho Ban Chủ Nhiệm.</li>
-                                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Tự động hóa thông báo qua Email & Zalo.</li>
                                 </ul>
                             </div>
                             <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mt-4">
@@ -161,8 +168,9 @@
                 <!-- 2. NHÂN SỰ -->
                 <div x-show="activeTab === 'nhansu'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                        <div class="p-6 border-b border-gray-100 bg-gray-50/50">
+                        <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <h3 class="font-bold text-gray-900">Danh sách nhân sự tổ Toán (Đầy đủ 10 thành viên)</h3>
+                            <span class="text-xs text-gray-500">Mỗi cá nhân chủ động đổi mật khẩu trong mục "Đổi mật khẩu"</span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
@@ -348,7 +356,7 @@
                     </div>
                 </div>
 
-                <!-- 7. BÁO CÁO THI ĐUA THÁNG (PHÂN QUYỀN CHẤM ĐIỂM & BIỂU ĐỒ HOÀN THÀNH) -->
+                <!-- 7. BÁO CÁO THI ĐUA THÁNG -->
                 <div x-show="activeTab === 'thidua'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex justify-between items-center">
                         <div>
@@ -361,7 +369,6 @@
                         </select>
                     </div>
 
-                    <!-- Bảng chi tiết tiêu chí -->
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
@@ -408,7 +415,6 @@
                         </div>
                     </div>
 
-                    <!-- Biểu đồ trực quan mức độ hoàn thành công việc / thi đua trong tháng -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wider" x-text="'Biểu đồ mức độ hoàn thành thi đua - ' + selectedThang"></h3>
@@ -420,7 +426,33 @@
                     </div>
                 </div>
 
-                <!-- 8. CÀI ĐẶT ĐỒNG BỘ -->
+                <!-- 8. ĐỔI MẬT KHẨU CÁ NHÂN -->
+                <div x-show="activeTab === 'doimatkhau'" class="space-y-6 max-w-xl mx-auto pt-6">
+                    <div class="bg-white rounded-2xl shadow-sm p-8 border border-indigo-100 space-y-4">
+                        <h3 class="text-base font-bold text-gray-900"><i class="fa-solid fa-key text-indigo-600 mr-2"></i> Đổi mật khẩu cá nhân</h3>
+                        <p class="text-xs text-gray-500">Đang đổi mật khẩu cho tài khoản: <span class="font-bold text-indigo-700" x-text="currentUser"></span></p>
+                        
+                        <div class="space-y-3 pt-2">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Mật khẩu cũ:</label>
+                                <input type="password" x-model="passForm.oldPass" placeholder="Nhập mật khẩu cũ..." class="w-full px-4 py-3 border rounded-xl text-sm bg-gray-50 focus:bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Mật khẩu mới:</label>
+                                <input type="password" x-model="passForm.newPass" placeholder="Nhập mật khẩu mới..." class="w-full px-4 py-3 border rounded-xl text-sm bg-gray-50 focus:bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Xác nhận mật khẩu mới:</label>
+                                <input type="password" x-model="passForm.confirmPass" placeholder="Nhập lại mật khẩu mới..." class="w-full px-4 py-3 border rounded-xl text-sm bg-gray-50 focus:bg-white">
+                            </div>
+                            <button @click="changePassword()" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition shadow-md text-sm mt-2">
+                                Xác nhận đổi mật khẩu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. CÀI ĐẶT ĐỒNG BỘ -->
                 <div x-show="activeTab === 'settings'" class="space-y-6 max-w-xl mx-auto pt-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-indigo-100 space-y-4">
                         <h3 class="text-base font-bold text-gray-900">Kết nối Google Sheets Trực tuyến</h3>
@@ -439,23 +471,25 @@
             return {
                 currentUser: localStorage.getItem('currentUser') || '',
                 selectedLoginName: '',
+                inputPassword: '',
                 activeTab: 'dashboard',
                 syncUrl: localStorage.getItem('googleScriptUrl') || '',
                 selectedThang: 'Tháng 10',
                 dashChart: null,
                 tdChart: null,
+                passForm: { oldPass: '', newPass: '', confirmPass: '' },
 
                 nhanSu: [
-                    { HoTen: 'Tô Văn Hóa', Email: 'tohoa89@gmail.com', DienThoai: '0983774975', ChucVu: 'Tổ trưởng' },
-                    { HoTen: 'Phạm Thị Huệ', Email: 'pham.hue844@gmail.com', DienThoai: '0982825966', ChucVu: 'Tổ phó' },
-                    { HoTen: 'Trần Minh Tuấn', Email: 'mymathtmt@gmail.com', DienThoai: '0369989969', ChucVu: 'Giáo viên' },
-                    { HoTen: 'Văn Thị Huệ', Email: 'vanhuevts@gmail.com', DienThoai: '0816961579', ChucVu: 'Giáo viên' },
-                    { HoTen: 'Phạm Thị Hải Yến', Email: 'Phamyen1712@gmail.com', DienThoai: '0986673963', ChucVu: 'Giáo viên' },
-                    { HoTen: 'Nguyễn Đức Duy', Email: 'duyspt0201@gmail.com', DienThoai: '0346491495', ChucVu: 'Giáo viên' },
-                    { HoTen: 'Dương Thị Huệ', Email: 'duonghue247@gmail.com', DienThoai: '0387940690', ChucVu: 'Giáo viên' },
-                    { HoTen: 'Nguyễn Thị Thúy Châu', Email: 'thuychau259@gmail.com', DienThoai: '0973676743', ChucVu: 'Giáo viên' },
-                    { HoTen: 'Nguyễn Thị Thưa', Email: 'thuaduongvts@gmail.com', DienThoai: '0394563511', ChucVu: 'Giáo viên' },
-                    { HoTen: 'Vũ Thị Thu', Email: 'thuvu.thcsltk@gmail.com', DienThoai: '0388306929', ChucVu: 'Giáo viên' }
+                    { HoTen: 'Tô Văn Hóa', Email: 'tohoa89@gmail.com', DienThoai: '0983774975', ChucVu: 'Tổ trưởng', MatKhau: '0983774975' },
+                    { HoTen: 'Phạm Thị Huệ', Email: 'pham.hue844@gmail.com', DienThoai: '0982825966', ChucVu: 'Tổ phó', MatKhau: '0982825966' },
+                    { HoTen: 'Trần Minh Tuấn', Email: 'mymathtmt@gmail.com', DienThoai: '0369989969', ChucVu: 'Giáo viên', MatKhau: '0369989969' },
+                    { HoTen: 'Văn Thị Huệ', Email: 'vanhuevts@gmail.com', DienThoai: '0816961579', ChucVu: 'Giáo viên', MatKhau: '0816961579' },
+                    { HoTen: 'Phạm Thị Hải Yến', Email: 'Phamyen1712@gmail.com', DienThoai: '0986673963', ChucVu: 'Giáo viên', MatKhau: '0986673963' },
+                    { HoTen: 'Nguyễn Đức Duy', Email: 'duyspt0201@gmail.com', DienThoai: '0346491495', ChucVu: 'Giáo viên', MatKhau: '0346491495' },
+                    { HoTen: 'Dương Thị Huệ', Email: 'duonghue247@gmail.com', DienThoai: '0387940690', ChucVu: 'Giáo viên', MatKhau: '0387940690' },
+                    { HoTen: 'Nguyễn Thị Thúy Châu', Email: 'thuychau259@gmail.com', DienThoai: '0973676743', ChucVu: 'Giáo viên', MatKhau: '0973676743' },
+                    { HoTen: 'Nguyễn Thị Thưa', Email: 'thuaduongvts@gmail.com', DienThoai: '0394563511', ChucVu: 'Giáo viên', MatKhau: '0394563511' },
+                    { HoTen: 'Vũ Thị Thu', Email: 'thuvu.thcsltk@gmail.com', DienThoai: '0388306929', ChucVu: 'Giáo viên', MatKhau: '0388306929' }
                 ],
                 lichCongTac: [
                     { TieuDe: 'Họp tổ chuyên môn', NoiDung: 'Triển khai nhiệm vụ tháng', ThoiGian: 'Thứ Hai' }
@@ -489,13 +523,45 @@
 
                 login() {
                     if (!this.selectedLoginName) { alert('Vui lòng chọn tên của thầy/cô!'); return; }
-                    this.currentUser = this.selectedLoginName;
-                    localStorage.setItem('currentUser', this.currentUser);
-                    this.$nextTick(() => { this.initCharts(); });
+                    if (!this.inputPassword) { alert('Vui lòng nhập mật khẩu cá nhân!'); return; }
+                    
+                    const gv = this.nhanSu.find(x => x.HoTen === this.selectedLoginName);
+                    if (gv && (gv.MatKhau === this.inputPassword || (!gv.MatKhau && gv.DienThoai === this.inputPassword))) {
+                        this.currentUser = this.selectedLoginName;
+                        localStorage.setItem('currentUser', this.currentUser);
+                        this.inputPassword = '';
+                        this.$nextTick(() => { this.initCharts(); });
+                    } else {
+                        alert('Mật khẩu không chính xác! (Mật khẩu mặc định là số điện thoại cá nhân)');
+                    }
                 },
                 logout() {
                     this.currentUser = '';
                     localStorage.removeItem('currentUser');
+                },
+
+                changePassword() {
+                    if (!this.passForm.oldPass || !this.passForm.newPass || !this.passForm.confirmPass) {
+                        alert('Vui lòng điền đầy đủ thông tin mật khẩu!');
+                        return;
+                    }
+                    if (this.passForm.newPass !== this.passForm.confirmPass) {
+                        alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+                        return;
+                    }
+
+                    const gv = this.nhanSu.find(x => x.HoTen === this.currentUser);
+                    const currentPass = gv.MatKhau || gv.DienThoai;
+
+                    if (this.passForm.oldPass !== currentPass) {
+                        alert('Mật khẩu cũ không chính xác!');
+                        return;
+                    }
+
+                    gv.MatKhau = this.passForm.newPass;
+                    this.syncSheet('NhanSu', this.nhanSu);
+                    alert('Đổi mật khẩu thành công!');
+                    this.passForm = { oldPass: '', newPass: '', confirmPass: '' };
                 },
 
                 getPhone(tenGV) {
@@ -520,7 +586,7 @@
                 calcTotal(hoTen) {
                     let td = this.getThiDua(hoTen);
                     td.TongDiem = Number(td.ThaoGiang || 0) + Number(td.HoSo || 0) + Number(td.NhiemVu || 0) + Number(td.KyLuat || 0);
-                    this.syncData();
+                    this.syncSheet('PhanCong', this.phanCong);
                     this.updateThiDuaChart();
                 },
 
@@ -528,34 +594,34 @@
                     if(!this.newLich.TieuDe) return;
                     this.lichCongTac.push({...this.newLich});
                     this.newLich = { TieuDe: '', NoiDung: '', ThoiGian: '' };
-                    this.syncData();
+                    this.syncSheet('LichCongTac', this.lichCongTac);
                 },
-                deleteLich(idx) { this.lichCongTac.splice(idx, 1); this.syncData(); },
+                deleteLich(idx) { this.lichCongTac.splice(idx, 1); this.syncSheet('LichCongTac', this.lichCongTac); },
 
                 addPhanCong() {
                     if(!this.newPC.NoiDung) return;
                     this.phanCong.push({...this.newPC});
                     this.newPC = { Khoi: 'Khối 10', NoiDung: '', GiaoVien: '', HanNop: '' };
-                    this.syncData();
+                    this.syncSheet('PhanCong', this.phanCong);
                 },
-                deletePhanCong(idx) { this.phanCong.splice(idx, 1); this.syncData(); },
+                deletePhanCong(idx) { this.phanCong.splice(idx, 1); this.syncSheet('PhanCong', this.phanCong); },
 
                 addHocLieu() {
                     if(!this.newHL.TenTaiLieu) return;
                     this.khoHocLieu.push({...this.newHL, TacGia: this.currentUser});
                     this.newHL = { Loai: 'KHBD (Giáo án)', Khoi: 'Khối 10', TenTaiLieu: '', Link: '#' };
-                    this.syncData();
+                    this.syncSheet('HocLieu', this.khoHocLieu);
                     this.updateDashboardChart();
                 },
-                deleteHocLieu(idx) { this.khoHocLieu.splice(idx, 1); this.syncData(); this.updateDashboardChart(); },
+                deleteHocLieu(idx) { this.khoHocLieu.splice(idx, 1); this.syncSheet('HocLieu', this.khoHocLieu); this.updateDashboardChart(); },
 
                 addChuyenMon() {
                     if(!this.newCM.GiaoVien) return;
                     this.chuyenMonList.push({...this.newCM});
                     this.newCM = { GiaoVien: '', NhiemVu: '', TKB: '' };
-                    this.syncData();
+                    this.syncSheet('ChuyenMon', this.chuyenMonList);
                 },
-                deleteChuyenMon(idx) { this.chuyenMonList.splice(idx, 1); this.syncData(); },
+                deleteChuyenMon(idx) { this.chuyenMonList.splice(idx, 1); this.syncSheet('ChuyenMon', this.chuyenMonList); },
 
                 saveSyncUrl() {
                     localStorage.setItem('googleScriptUrl', this.syncUrl);
@@ -563,13 +629,13 @@
                     this.fetchData();
                 },
 
-                syncData() {
+                syncSheet(sheetName, rowsData) {
                     if (!this.syncUrl) return;
                     fetch(this.syncUrl, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sheet: 'PhanCong', rows: this.phanCong })
+                        body: JSON.stringify({ sheet: sheetName, rows: rowsData })
                     });
                 },
 
@@ -578,7 +644,12 @@
                     fetch(this.syncUrl + '?action=getData')
                         .then(res => res.json())
                         .then(data => {
-                            if(data.NhanSu) this.nhanSu = data.NhanSu;
+                            if(data.NhanSu) {
+                                this.nhanSu = data.NhanSu.map(item => ({
+                                    ...item,
+                                    MatKhau: item.MatKhau || item.DienThoai
+                                }));
+                            }
                             if(data.LichCongTac) this.lichCongTac = data.LichCongTac;
                             if(data.PhanCong) this.phanCong = data.PhanCong;
                             if(data.HocLieu) this.khoHocLieu = data.HocLieu;
@@ -626,7 +697,7 @@
                     const ctx = document.getElementById('thiDuaChart');
                     if (!ctx) return;
 
-                    const labels = this.nhanSu.map(g => g.HoTen.split(' ').pop()); // Lấy tên gọi cho gọn
+                    const labels = this.nhanSu.map(g => g.HoTen.split(' ').pop());
                     const scores = this.nhanSu.map(g => this.getThiDua(g.HoTen).TongDiem);
 
                     if (this.tdChart) this.tdChart.destroy();
@@ -637,7 +708,7 @@
                             datasets: [{
                                 label: 'Tổng điểm thi đua (Thang điểm 100)',
                                 data: scores,
-                                backgroundColor: scores.map(s => s >= 90 ? 'rgba(16, 185, 129, 0.8)' : (s >= 80 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)')),
+                                backgroundColor: scores.map(s => s >= 90 ? 'rgba(16, 185, 129, 0.8)' : (s >= 59 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)')),
                                 borderRadius: 8
                             }]
                         },
@@ -659,6 +730,7 @@
                         'hoclieu': 'Kho học liệu (6-12)',
                         'chuyenmon_tkb': 'Phân công chuyên môn & TKB',
                         'thidua': 'Báo cáo thi đua theo tháng',
+                        'doimatkhau': 'Đổi mật khẩu cá nhân',
                         'settings': 'Cài đặt đồng bộ'
                     };
                     return titles[this.activeTab] || '';
