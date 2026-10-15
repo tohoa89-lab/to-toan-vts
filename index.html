@@ -8,12 +8,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Chart.js cho biểu đồ trực quan -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-gray-50 text-gray-800" x-data="mathApp()">
+<body class="bg-gray-50 text-gray-800" x-data="mathApp()" x-init="initCharts()">
 
     <!-- MÀN HÌNH ĐĂNG NHẬP -->
     <div x-show="!currentUser" class="fixed inset-0 bg-indigo-950 flex items-center justify-center z-50 p-4">
@@ -50,9 +52,10 @@
                     <i class="fa-solid fa-square-root-variable text-indigo-400"></i> Tổ Toán VTS
                 </h1>
                 <p class="text-xs text-indigo-300 mt-1">Xin chào, <span class="font-semibold text-white" x-text="currentUser"></span></p>
+                <div class="mt-2 inline-block px-2.5 py-0.5 rounded text-[10px] font-bold" :class="isManager() ? 'bg-amber-400 text-amber-950' : 'bg-indigo-800 text-indigo-200'" x-text="isManager() ? '👑 Ban chủ nhiệm (Quản lý)' : '👤 Giáo viên thành viên'"></div>
             </div>
             <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
-                <button @click="activeTab = 'dashboard'" :class="activeTab === 'dashboard' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
+                <button @click="activeTab = 'dashboard'; $nextTick(() => updateDashboardChart())" :class="activeTab === 'dashboard' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
                     <i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Tổng quan</span>
                 </button>
                 <button @click="activeTab = 'nhansu'" :class="activeTab === 'nhansu' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
@@ -70,7 +73,7 @@
                 <button @click="activeTab = 'chuyenmon_tkb'" :class="activeTab === 'chuyenmon_tkb' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
                     <i class="fa-solid fa-table-cells w-5 text-center"></i><span>Phân công & TKB</span>
                 </button>
-                <button @click="activeTab = 'thidua'" :class="activeTab === 'thidua' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
+                <button @click="activeTab = 'thidua'; $nextTick(() => updateThiDuaChart())" :class="activeTab === 'thidua' ? 'bg-indigo-800 text-white shadow-md' : 'text-indigo-300 hover:bg-indigo-800/60 hover:text-white'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-left text-sm">
                     <i class="fa-solid fa-award w-5 text-center"></i><span>Báo cáo thi đua tháng</span>
                 </button>
                 <div class="pt-4 mt-4 border-t border-indigo-800/80">
@@ -97,7 +100,7 @@
 
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50/70 p-8">
                 
-                <!-- 1. DASHBOARD -->
+                <!-- 1. DASHBOARD (CÓ BIỂU ĐỒ TRỰC QUAN) -->
                 <div x-show="activeTab === 'dashboard'" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex items-center justify-between">
@@ -127,6 +130,30 @@
                                 <h3 class="text-3xl font-bold text-gray-900 mt-2" x-text="phanCong.length"></h3>
                             </div>
                             <div class="p-4 bg-amber-50 text-amber-600 rounded-2xl"><i class="fa-solid fa-pen-clip text-xl"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Khu vực hiển thị biểu đồ trực quan tổng quan -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 class="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider">Thống kê học liệu theo Khối lớp (6 - 12)</h3>
+                            <div class="relative h-64 flex items-center justify-center">
+                                <canvas id="dashboardChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wider">Thông tin nhanh Tổ Toán VTS</h3>
+                                <p class="text-sm text-gray-600 mt-2">Trường THCS&THPT Võ Thị Sáu hoạt động trực tuyến thông suốt qua hệ thống đồng bộ Google Sheets.</p>
+                                <ul class="mt-4 space-y-2 text-sm text-gray-700">
+                                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Quản lý toàn bộ 10 giáo viên chuẩn xác.</li>
+                                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Phân quyền chấm điểm thi đua tháng cho Ban Chủ Nhiệm.</li>
+                                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Tự động hóa thông báo qua Email & Zalo.</li>
+                                </ul>
+                            </div>
+                            <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mt-4">
+                                <p class="text-xs font-semibold text-indigo-800">Tổ trưởng: Thầy Tô Văn Hóa | Tổ phó: Cô Phạm Thị Huệ</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -166,7 +193,7 @@
                 <div x-show="activeTab === 'lich'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <h3 class="text-lg font-bold text-gray-900">Lịch sinh hoạt chuyên môn & Công tác tuần</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200" x-show="isManager()">
                             <input type="text" x-model="newLich.TieuDe" placeholder="Tiêu đề lịch công tác..." class="px-4 py-2 border rounded-lg text-sm bg-white">
                             <input type="text" x-model="newLich.NoiDung" placeholder="Nội dung chi tiết..." class="px-4 py-2 border rounded-lg text-sm bg-white">
                             <div class="flex gap-2">
@@ -183,7 +210,7 @@
                                     </div>
                                     <div class="flex items-center gap-4">
                                         <span class="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-lg" x-text="item.ThoiGian"></span>
-                                        <button @click="deleteLich(idx)" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                                        <button @click="deleteLich(idx)" x-show="isManager()" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                 </div>
                             </template>
@@ -196,7 +223,7 @@
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <h3 class="text-lg font-bold text-gray-900">Phân công ra đề kiểm tra khảo thí</h3>
                         <p class="text-xs text-gray-500">Giao việc sẽ tự động kích hoạt gửi Email thông báo và hỗ trợ kết nối Zalo trực tiếp.</p>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200" x-show="isManager()">
                             <select x-model="newPC.Khoi" class="px-4 py-2 border rounded-lg text-sm bg-white">
                                 <option value="Khối 6">Khối 6</option><option value="Khối 7">Khối 7</option><option value="Khối 8">Khối 8</option><option value="Khối 9">Khối 9</option><option value="Khối 10">Khối 10</option><option value="Khối 11">Khối 11</option><option value="Khối 12">Khối 12</option>
                             </select>
@@ -213,7 +240,7 @@
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-50 text-gray-500 uppercase text-[11px] font-bold border-b">
-                                    <th class="p-3">Khối</th><th class="p-3">Nội dung đề</th><th class="p-3">Giáo viên phụ trách</th><th class="p-3">Hạn nộp</th><th class="p-3">Thông báo</th><th class="p-3">Thao tác</th>
+                                    <th class="p-3">Khối</th><th class="p-3">Nội dung đề</th><th class="p-3">Giáo viên phụ trách</th><th class="p-3">Hạn nộp</th><th class="p-3">Thông báo</th><th class="p-3" x-show="isManager()">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y text-sm">
@@ -228,7 +255,7 @@
                                                 <i class="fa-solid fa-comment"></i> Gửi Zalo
                                             </a>
                                         </td>
-                                        <td class="p-3"><button @click="deletePhanCong(idx)" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td>
+                                        <td class="p-3" x-show="isManager()"><button @click="deletePhanCong(idx)" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -236,7 +263,7 @@
                     </div>
                 </div>
 
-                <!-- 5. KHO HỌC LIỆU (KHBD, ĐỀ THI, CHUYÊN ĐỀ HSG TỪ KHỐI 6 ĐẾN 12) -->
+                <!-- 5. KHO HỌC LIỆU -->
                 <div x-show="activeTab === 'hoclieu'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <div class="flex justify-between items-center">
@@ -283,7 +310,7 @@
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <a :href="hl.Link" target="_blank" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200">Mở xem</a>
-                                        <button @click="deleteHocLieu(idx)" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+                                        <button @click="deleteHocLieu(idx)" x-show="hl.TacGia === currentUser || isManager()" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                 </div>
                             </template>
@@ -291,11 +318,11 @@
                     </div>
                 </div>
 
-                <!-- 6. PHÂN CÔNG CHUYÊN MÔN & THỜI KHÓA BIỂU -->
+                <!-- 6. PHÂN CÔNG CHUYÊN MÔN & TKB -->
                 <div x-show="activeTab === 'chuyenmon_tkb'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <h3 class="text-lg font-bold text-gray-900">Phân công chuyên môn & Lịch báo giảng trực quan theo nhân sự</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200" x-show="isManager()">
                             <select x-model="newCM.GiaoVien" class="px-4 py-2 border rounded-lg text-sm bg-white">
                                 <option value="">-- Chọn giáo viên --</option>
                                 <template x-for="gv in nhanSu"><option :value="gv.HoTen" x-text="gv.HoTen"></option></template>
@@ -311,7 +338,7 @@
                                 <div class="p-5 border rounded-xl bg-white shadow-2xs space-y-2">
                                     <div class="flex justify-between items-center">
                                         <h4 class="font-bold text-indigo-900" x-text="cm.GiaoVien"></h4>
-                                        <button @click="deleteChuyenMon(idx)" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+                                        <button @click="deleteChuyenMon(idx)" x-show="isManager()" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                     <p class="text-sm text-gray-700"><strong>Nhiệm vụ:</strong> <span x-text="cm.NhiemVu"></span></p>
                                     <p class="text-sm text-gray-600 bg-gray-50 p-2 rounded border"><strong>Thời khóa biểu / Lịch:</strong> <span x-text="cm.TKB"></span></p>
@@ -321,30 +348,31 @@
                     </div>
                 </div>
 
-                <!-- 7. BÁO CÁO THI ĐUA THEO THÁNG & ĐỦ 10 NHÂN SỰ -->
+                <!-- 7. BÁO CÁO THI ĐUA THÁNG (PHÂN QUYỀN CHẤM ĐIỂM & BIỂU ĐỒ HOÀN THÀNH) -->
                 <div x-show="activeTab === 'thidua'" class="space-y-6">
-                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-                        <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                            <h3 class="font-bold text-gray-900">Báo cáo thi đua giáo viên tổ Toán (Đầy đủ 10 nhân sự)</h3>
-                            <select x-model="selectedThang" class="px-4 py-2 border rounded-lg text-sm bg-white font-semibold text-indigo-700">
-                                <option value="Tháng 9">Tháng 9</option>
-                                <option value="Tháng 10">Tháng 10</option>
-                                <option value="Tháng 11">Tháng 11</option>
-                                <option value="Tháng 12">Tháng 12</option>
-                                <option value="Tháng 1">Tháng 1</option>
-                                <option value="Tháng 2">Tháng 2</option>
-                                <option value="Tháng 3">Tháng 3</option>
-                                <option value="Tháng 4">Tháng 4</option>
-                                <option value="Tháng 5">Tháng 5</option>
-                            </select>
+                    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-gray-900 text-base">Bảng chấm điểm thi đua tháng (Đầy đủ 10 nhân sự)</h3>
+                            <p class="text-xs text-gray-500 mt-0.5" x-text="isManager() ? '👑 Chế độ Quản lý: Tổ trưởng/Tổ phó có toàn quyền chấm và sửa điểm.' : '👁️ Chế độ Xem: Giáo viên thành viên chỉ xem điểm và biểu đồ hoàn thành.'"></p>
                         </div>
+                        <select x-model="selectedThang" @change="$nextTick(() => updateThiDuaChart())" class="px-4 py-2 border rounded-xl text-sm bg-white font-semibold text-indigo-700 shadow-2xs">
+                            <option value="Tháng 9">Tháng 9</option><option value="Tháng 10">Tháng 10</option><option value="Tháng 11">Tháng 11</option><option value="Tháng 12">Tháng 12</option>
+                            <option value="Tháng 1">Tháng 1</option><option value="Tháng 2">Tháng 2</option><option value="Tháng 3">Tháng 3</option><option value="Tháng 4">Tháng 4</option><option value="Tháng 5">Tháng 5</option>
+                        </select>
+                    </div>
+
+                    <!-- Bảng chi tiết tiêu chí -->
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="bg-gray-50 text-gray-500 uppercase text-[11px] font-bold border-b">
                                         <th class="p-4 px-6">Họ và tên giáo viên</th>
-                                        <th class="p-4">Thao giảng / Dự giờ</th>
-                                        <th class="p-4">Hồ sơ giáo án</th>
+                                        <th class="p-3 text-center">Thao giảng (25đ)</th>
+                                        <th class="p-3 text-center">Hồ sơ giáo án (25đ)</th>
+                                        <th class="p-3 text-center">Nhiệm vụ giao (30đ)</th>
+                                        <th class="p-3 text-center">Kỷ luật (20đ)</th>
+                                        <th class="p-3 text-center bg-indigo-50/50">Tổng điểm</th>
                                         <th class="p-4 px-6">Xếp loại thi đua</th>
                                     </tr>
                                 </thead>
@@ -352,18 +380,47 @@
                                     <template x-for="gv in nhanSu" :key="gv.HoTen">
                                         <tr class="hover:bg-indigo-50/30">
                                             <td class="p-4 px-6 font-semibold text-gray-900" x-text="gv.HoTen"></td>
-                                            <td class="p-4"><input type="text" x-model="getThiDua(gv.HoTen).ThaoGiang" @blur="syncData()" class="px-3 py-1 border rounded text-xs w-full bg-white"></td>
-                                            <td class="p-4"><input type="text" x-model="getThiDua(gv.HoTen).HoSo" @blur="syncData()" class="px-3 py-1 border rounded text-xs w-full bg-white"></td>
-                                            <td class="p-4 px-6"><input type="text" x-model="getThiDua(gv.HoTen).XepLoai" @blur="syncData()" class="px-3 py-1 border rounded text-xs w-full font-semibold text-indigo-700 bg-white"></td>
+                                            <td class="p-3 text-center">
+                                                <input type="number" min="0" max="25" x-model.number="getThiDua(gv.HoTen).ThaoGiang" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <input type="number" min="0" max="25" x-model.number="getThiDua(gv.HoTen).HoSo" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <input type="number" min="0" max="30" x-model.number="getThiDua(gv.HoTen).NhiemVu" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <input type="number" min="0" max="20" x-model.number="getThiDua(gv.HoTen).KyLuat" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
+                                            </td>
+                                            <td class="p-3 text-center bg-indigo-50/30 font-bold text-indigo-700" x-text="getThiDua(gv.HoTen).TongDiem + 'đ'"></td>
+                                            <td class="p-4 px-6">
+                                                <select x-model="getThiDua(gv.HoTen).XepLoai" @change="syncData()" :disabled="!isManager()" class="px-3 py-1 border rounded-lg text-xs font-semibold text-indigo-700 bg-white disabled:bg-gray-100 disabled:text-gray-500">
+                                                    <option value="Hoàn thành xuất sắc">Hoàn thành xuất sắc</option>
+                                                    <option value="Hoàn thành tốt">Hoàn thành tốt</option>
+                                                    <option value="Hoàn thành">Hoàn thành</option>
+                                                    <option value="Chưa hoàn thành">Chưa hoàn thành</option>
+                                                </select>
+                                            </td>
                                         </tr>
                                     </template>
                                 </tbody>
                             </table>
                         </div>
                     </div>
+
+                    <!-- Biểu đồ trực quan mức độ hoàn thành công việc / thi đua trong tháng -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wider" x-text="'Biểu đồ mức độ hoàn thành thi đua - ' + selectedThang"></h3>
+                            <button @click="updateThiDuaChart()" class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold hover:bg-indigo-100"><i class="fa-solid fa-rotate"></i> Làm mới biểu đồ</button>
+                        </div>
+                        <div class="relative h-80 flex items-center justify-center">
+                            <canvas id="thiDuaChart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- 8. CÀI ĐẶT ĐỒNG BỘ GOOGLE SHEETS -->
+                <!-- 8. CÀI ĐẶT ĐỒNG BỘ -->
                 <div x-show="activeTab === 'settings'" class="space-y-6 max-w-xl mx-auto pt-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-indigo-100 space-y-4">
                         <h3 class="text-base font-bold text-gray-900">Kết nối Google Sheets Trực tuyến</h3>
@@ -385,6 +442,8 @@
                 activeTab: 'dashboard',
                 syncUrl: localStorage.getItem('googleScriptUrl') || '',
                 selectedThang: 'Tháng 10',
+                dashChart: null,
+                tdChart: null,
 
                 nhanSu: [
                     { HoTen: 'Tô Văn Hóa', Email: 'tohoa89@gmail.com', DienThoai: '0983774975', ChucVu: 'Tổ trưởng' },
@@ -424,10 +483,15 @@
 
                 thiDuaData: {},
 
+                isManager() {
+                    return this.currentUser === 'Tô Văn Hóa' || this.currentUser === 'Phạm Thị Huệ';
+                },
+
                 login() {
                     if (!this.selectedLoginName) { alert('Vui lòng chọn tên của thầy/cô!'); return; }
                     this.currentUser = this.selectedLoginName;
                     localStorage.setItem('currentUser', this.currentUser);
+                    this.$nextTick(() => { this.initCharts(); });
                 },
                 logout() {
                     this.currentUser = '';
@@ -448,9 +512,16 @@
                 getThiDua(hoTen) {
                     if (!this.thiDuaData[this.selectedThang]) this.thiDuaData[this.selectedThang] = {};
                     if (!this.thiDuaData[this.selectedThang][hoTen]) {
-                        this.thiDuaData[this.selectedThang][hoTen] = { ThaoGiang: 'Tốt', HoSo: 'Đầy đủ', XepLoai: 'Hoàn thành xuất sắc' };
+                        this.thiDuaData[this.selectedThang][hoTen] = { ThaoGiang: 23, HoSo: 24, NhiemVu: 28, KyLuat: 19, TongDiem: 94, XepLoai: 'Hoàn thành xuất sắc' };
                     }
                     return this.thiDuaData[this.selectedThang][hoTen];
+                },
+
+                calcTotal(hoTen) {
+                    let td = this.getThiDua(hoTen);
+                    td.TongDiem = Number(td.ThaoGiang || 0) + Number(td.HoSo || 0) + Number(td.NhiemVu || 0) + Number(td.KyLuat || 0);
+                    this.syncData();
+                    this.updateThiDuaChart();
                 },
 
                 addLich() {
@@ -474,8 +545,9 @@
                     this.khoHocLieu.push({...this.newHL, TacGia: this.currentUser});
                     this.newHL = { Loai: 'KHBD (Giáo án)', Khoi: 'Khối 10', TenTaiLieu: '', Link: '#' };
                     this.syncData();
+                    this.updateDashboardChart();
                 },
-                deleteHocLieu(idx) { this.khoHocLieu.splice(idx, 1); this.syncData(); },
+                deleteHocLieu(idx) { this.khoHocLieu.splice(idx, 1); this.syncData(); this.updateDashboardChart(); },
 
                 addChuyenMon() {
                     if(!this.newCM.GiaoVien) return;
@@ -511,7 +583,71 @@
                             if(data.PhanCong) this.phanCong = data.PhanCong;
                             if(data.HocLieu) this.khoHocLieu = data.HocLieu;
                             if(data.ChuyenMon) this.chuyenMonList = data.ChuyenMon;
+                            this.updateDashboardChart();
                         }).catch(err => console.error(err));
+                },
+
+                initCharts() {
+                    this.updateDashboardChart();
+                    this.updateThiDuaChart();
+                },
+
+                updateDashboardChart() {
+                    const ctx = document.getElementById('dashboardChart');
+                    if (!ctx) return;
+                    
+                    const khoiCounts = { 'Khối 6': 0, 'Khối 7': 0, 'Khối 8': 0, 'Khối 9': 0, 'Khối 10': 0, 'Khối 11': 0, 'Khối 12': 0 };
+                    this.khoHocLieu.forEach(hl => {
+                        if (khoiCounts[hl.Khoi] !== undefined) khoiCounts[hl.Khoi]++;
+                    });
+
+                    if (this.dashChart) this.dashChart.destroy();
+                    this.dashChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(khoiCounts),
+                            datasets: [{
+                                label: 'Số lượng tài liệu',
+                                data: Object.values(khoiCounts),
+                                backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        }
+                    });
+                },
+
+                updateThiDuaChart() {
+                    const ctx = document.getElementById('thiDuaChart');
+                    if (!ctx) return;
+
+                    const labels = this.nhanSu.map(g => g.HoTen.split(' ').pop()); // Lấy tên gọi cho gọn
+                    const scores = this.nhanSu.map(g => this.getThiDua(g.HoTen).TongDiem);
+
+                    if (this.tdChart) this.tdChart.destroy();
+                    this.tdChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Tổng điểm thi đua (Thang điểm 100)',
+                                data: scores,
+                                backgroundColor: scores.map(s => s >= 90 ? 'rgba(16, 185, 129, 0.8)' : (s >= 80 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)')),
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, max: 100 } }
+                        }
+                    });
                 },
 
                 getTabTitle() {
