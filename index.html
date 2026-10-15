@@ -555,8 +555,30 @@
                 initApp() {
                     this.setDefaultMonday();
                     this.generateWeekSchedule();
+                    this.initThiDuaDefault();
                     this.initCharts();
                     this.fetchData();
+                },
+
+                initThiDuaDefault() {
+                    const months = ['Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12', 'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'];
+                    if (!Array.isArray(this.thiDuaData) || this.thiDuaData.length === 0) {
+                        this.thiDuaData = [];
+                        months.forEach(m => {
+                            this.nhanSu.forEach(gv => {
+                                this.thiDuaData.push({
+                                    Thang: m,
+                                    HoTen: gv.HoTen,
+                                    ThaoGiang: 23,
+                                    HoSo: 24,
+                                    NhiemVu: 28,
+                                    KyLuat: 19,
+                                    TongDiem: 94,
+                                    XepLoai: 'Hoàn thành xuất sắc'
+                                });
+                            });
+                        });
+                    }
                 },
 
                 setDefaultMonday() {
@@ -764,7 +786,7 @@
                             if(data.PhanCong) this.phanCong = data.PhanCong;
                             if(data.HocLieu) this.khoHocLieu = data.HocLieu;
                             if(data.ChuyenMonTKB) this.chuyenMonList = data.ChuyenMonTKB;
-                            if(data.ThiDua) this.thiDuaData = data.ThiDua;
+                            if(data.ThiDua && data.ThiDua.length > 0) this.thiDuaData = data.ThiDua;
                             this.updateDashboardChart();
                             this.updateThiDuaChart();
                         }).catch(err => console.error(err));
