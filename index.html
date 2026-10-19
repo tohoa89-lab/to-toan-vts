@@ -642,14 +642,18 @@
                     if (!this.inputPassword) { alert('Vui lòng nhập mật khẩu cá nhân!'); return; }
                     
                     const gv = this.nhanSu.find(x => x.HoTen === this.selectedLoginName);
-                    if (gv && (gv.MatKhau === this.inputPassword || (!gv.MatKhau && gv.DienThoai === this.inputPassword))) {
-                        this.currentUser = this.selectedLoginName;
-                        localStorage.setItem('currentUser', this.currentUser);
-                        this.inputPassword = '';
-                        this.$nextTick(() => { this.initCharts(); });
-                    } else {
-                        alert('Mật khẩu không chính xác! (Mật khẩu mặc định là số điện thoại cá nhân)');
+                    if (gv) {
+                        const inputClean = String(this.inputPassword).trim().replace(/^0+/, '');
+                        const passClean = String(gv.MatKhau || gv.DienThoai).trim().replace(/^0+/, '');
+                        if (inputClean === passClean) {
+                            this.currentUser = this.selectedLoginName;
+                            localStorage.setItem('currentUser', this.currentUser);
+                            this.inputPassword = '';
+                            this.$nextTick(() => { this.initCharts(); });
+                            return;
+                        }
                     }
+                    alert('Mật khẩu không chính xác! (Mật khẩu mặc định là số điện thoại cá nhân)');
                 },
                 logout() {
                     this.currentUser = '';
@@ -667,9 +671,10 @@
                     }
 
                     const gv = this.nhanSu.find(x => x.HoTen === this.currentUser);
-                    const currentPass = gv.MatKhau || gv.DienThoai;
+                    const currentPass = String(gv.MatKhau || gv.DienThoai).trim().replace(/^0+/, '');
+                    const oldPassClean = String(this.passForm.oldPass).trim().replace(/^0+/, '');
 
-                    if (this.passForm.oldPass !== currentPass) {
+                    if (oldPassClean !== currentPass) {
                         alert('Mật khẩu cũ không chính xác!');
                         return;
                     }
