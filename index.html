@@ -252,12 +252,14 @@
                     </div>
                 </div>
 
-                <!-- 4. PHÂN CÔNG RA ĐỀ -->
+                <!-- 4. PHÂN CÔNG RA ĐỀ (SẮP XẾP THỜI GIAN THỰC & CẢNH BÁO ĐỎ) -->
                 <div x-show="activeTab === 'phancong'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-gray-900">Phân công ra đề kiểm tra khảo thí</h3>
-                            <span class="text-xs text-gray-500" x-show="!isManager()">(Chế độ xem - Chỉ Ban chủ nhiệm mới có quyền phân công)</span>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">Phân công ra đề kiểm tra khảo thí</h3>
+                                <p class="text-xs text-red-600 font-semibold mt-0.5">⚠️ Các nhiệm vụ chưa hết hạn được đánh dấu màu đỏ theo thời gian thực.</p>
+                            </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200" x-show="isManager()">
                             <select x-model="newPC.Khoi" class="px-4 py-2 border rounded-lg text-sm bg-white">
@@ -269,33 +271,52 @@
                                 <template x-for="gv in nhanSu"><option :value="gv.HoTen" x-text="gv.HoTen"></option></template>
                             </select>
                             <div class="flex gap-2">
-                                <input type="text" x-model="newPC.HanNop" placeholder="Hạn nộp..." class="flex-1 px-4 py-2 border rounded-lg text-sm bg-white">
+                                <input type="date" x-model="newPC.HanNop" class="flex-1 px-3 py-2 border rounded-lg text-sm bg-white text-indigo-700 font-semibold">
                                 <button @click="addPhanCong()" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg text-sm">Giao</button>
                             </div>
                         </div>
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 text-gray-500 uppercase text-[11px] font-bold border-b">
-                                    <th class="p-3">Khối</th><th class="p-3">Nội dung đề</th><th class="p-3">Giáo viên phụ trách</th><th class="p-3">Hạn nộp</th><th class="p-3">Thông báo Zalo</th><th class="p-3" x-show="isManager()">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y text-sm">
-                                <template x-for="(pc, idx) in phanCong" :key="idx">
-                                    <tr>
-                                        <td class="p-3 font-semibold" x-text="pc.Khoi"></td>
-                                        <td class="p-3" x-text="pc.NoiDung"></td>
-                                        <td class="p-3 text-indigo-600 font-semibold" x-text="pc.GiaoVien"></td>
-                                        <td class="p-3 text-gray-500" x-text="pc.HanNop"></td>
-                                        <td class="p-3">
-                                            <a :href="'https://zalo.me/' + getPhone(pc.GiaoVien)" target="_blank" class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-xs font-semibold border border-blue-200 inline-flex items-center gap-1 hover:bg-blue-100">
-                                                <i class="fa-solid fa-comment"></i> Nhắn Zalo
-                                            </a>
-                                        </td>
-                                        <td class="p-3" x-show="isManager()"><button @click="deletePhanCong(idx)" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50 text-gray-500 uppercase text-[11px] font-bold border-b">
+                                        <th class="p-3">Khối</th>
+                                        <th class="p-3">Nội dung đề</th>
+                                        <th class="p-3">Giáo viên phụ trách</th>
+                                        <th class="p-3">Hạn nộp</th>
+                                        <th class="p-3 text-center">Trạng thái</th>
+                                        <th class="p-3">Thông báo Zalo</th>
+                                        <th class="p-3" x-show="isManager()">Thao tác</th>
                                     </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y text-sm">
+                                    <template x-for="(pc, idx) in sortedPhanCong" :key="idx">
+                                        <tr class="hover:bg-indigo-50/30">
+                                            <td class="p-3 font-semibold" x-text="pc.Khoi"></td>
+                                            <td class="p-3" x-text="pc.NoiDung"></td>
+                                            <td class="p-3 text-indigo-600 font-semibold" x-text="pc.GiaoVien"></td>
+                                            <td class="p-3 font-mono text-xs font-bold" :class="isNotExpired(pc.HanNop) ? 'text-red-600' : 'text-gray-500'" x-text="formatDateStr(pc.HanNop)"></td>
+                                            <td class="p-3 text-center">
+                                                <select x-model="pc.TrangThai" @change="savePhanCongData()" :disabled="!isManager()" class="px-3 py-1 rounded-full text-xs font-semibold border bg-white"
+                                                        :class="pc.TrangThai === 'Hoàn thành đúng hạn' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (pc.TrangThai === 'Hoàn thành muộn' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-red-50 text-red-700 border-red-200')">
+                                                    <option value="Chưa hoàn thành">Chưa hoàn thành</option>
+                                                    <option value="Hoàn thành đúng hạn">Hoàn thành đúng hạn</option>
+                                                    <option value="Hoàn thành muộn">Hoàn thành muộn</option>
+                                                </select>
+                                            </td>
+                                            <td class="p-3">
+                                                <a :href="'https://zalo.me/' + getPhone(pc.GiaoVien)" target="_blank" class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded text-xs font-semibold border border-blue-200 inline-flex items-center gap-1 hover:bg-blue-100">
+                                                    <i class="fa-solid fa-comment"></i> Nhắn Zalo
+                                                </a>
+                                            </td>
+                                            <td class="p-3" x-show="isManager()">
+                                                <button @click="deletePhanCong(idx)" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -390,7 +411,7 @@
                     </div>
                 </div>
 
-                <!-- 7. BÁO CÁO THI ĐUA THÁNG (TÍCH CHỌN TIÊU CHÍ) -->
+                <!-- 7. BÁO CÁO THI ĐUA THÁNG -->
                 <div x-show="activeTab === 'thidua'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex justify-between items-center">
                         <div>
@@ -640,9 +661,29 @@
                 newLich: { Thu: 'Thứ Hai', ThoiGian: '', NoiDung: '' },
 
                 phanCong: [
-                    { Khoi: 'Khối 10', NoiDung: 'Đề kiểm tra giữa kỳ 1', GiaoVien: 'Trần Minh Tuấn', HanNop: '20/10/2026' }
+                    { Khoi: 'Khối 10', NoiDung: 'Đề kiểm tra giữa kỳ 1', GiaoVien: 'Trần Minh Tuấn', HanNop: '2026-10-30', TrangThai: 'Chưa hoàn thành' }
                 ],
-                newPC: { Khoi: 'Khối 10', NoiDung: '', GiaoVien: '', HanNop: '' },
+                newPC: { Khoi: 'Khối 10', NoiDung: '', GiaoVien: '', HanNop: new Date().toISOString().split('T')[0], TrangThai: 'Chưa hoàn thành' },
+
+                get sortedPhanCong() {
+                    return [...this.phanCong].sort((a, b) => new Date(a.HanNop) - new Date(b.HanNop));
+                },
+
+                isNotExpired(dateStr) {
+                    if (!dateStr) return false;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const target = new Date(dateStr);
+                    return target >= today;
+                },
+
+                formatDateStr(dateStr) {
+                    if (!dateStr) return '';
+                    if (dateStr.includes('/')) return dateStr;
+                    const parts = dateStr.split('-');
+                    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    return dateStr;
+                },
 
                 khoHocLieu: [
                     { Loai: 'KHBD (Giáo án)', Khoi: 'Khối 10', TenTaiLieu: 'KHBD Hình học 10 chuẩn 5512', Link: '#', TacGia: 'Tô Văn Hóa' },
@@ -894,7 +935,10 @@
                     if(!this.isManager()) { alert('Bạn không có quyền thực hiện thao tác này!'); return; }
                     if(!this.newPC.NoiDung) return;
                     this.phanCong.push({...this.newPC});
-                    this.newPC = { Khoi: 'Khối 10', NoiDung: '', GiaoVien: '', HanNop: '' };
+                    this.newPC = { Khoi: 'Khối 10', NoiDung: '', GiaoVien: '', HanNop: new Date().toISOString().split('T')[0], TrangThai: 'Chưa hoàn thành' };
+                    this.syncSheet('PhanCong', this.phanCong);
+                },
+                savePhanCongData() {
                     this.syncSheet('PhanCong', this.phanCong);
                 },
                 deletePhanCong(idx) {
