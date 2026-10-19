@@ -23,7 +23,7 @@
             <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
                 <i class="fa-solid fa-lock"></i>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">TỔ TOÁN VTS</h2>
+            <h2 class="text-2xl font-bold text-gray-900">BẢO MẬT TỔ TOÁN VTS</h2>
             <p class="text-xs text-gray-500 mt-1 mb-6">Trường THCS&THPT Võ Thị Sáu</p>
             
             <div class="space-y-4 text-left">
@@ -390,12 +390,12 @@
                     </div>
                 </div>
 
-                <!-- 7. BÁO CÁO THI ĐUA THÁNG -->
+                <!-- 7. BÁO CÁO THI ĐUA THÁNG (TÍCH CHỌN TIÊU CHÍ) -->
                 <div x-show="activeTab === 'thidua'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex justify-between items-center">
                         <div>
-                            <h3 class="font-bold text-gray-900 text-base">Bảng chấm điểm thi đua tháng (Đầy đủ 10 nhân sự)</h3>
-                            <p class="text-xs text-gray-500 mt-0.5" x-text="isManager() ? '👑 Chế độ Quản lý: Tổ trưởng/Tổ phó toàn quyền chấm và sửa điểm.' : '👁️ Chế độ Xem: Giáo viên thành viên chỉ xem điểm và biểu đồ hoàn thành.'"></p>
+                            <h3 class="font-bold text-gray-900 text-base">Bảng chấm điểm thi đua tháng (Thang điểm 100 theo tiêu chí)</h3>
+                            <p class="text-xs text-gray-500 mt-0.5" x-text="isManager() ? '👑 Tổ trưởng/Tổ phó bấm "Chấm tiêu chí" để tích chọn điểm cho giáo viên.' : '👁️ Chế độ Xem: Giáo viên thành viên xem điểm và biểu đồ hoàn thành.'"></p>
                         </div>
                         <select x-model="selectedThang" @change="$nextTick(() => updateThiDuaChart())" class="px-4 py-2 border rounded-xl text-sm bg-white font-semibold text-indigo-700 shadow-2xs">
                             <option value="Tháng 9">Tháng 9</option><option value="Tháng 10">Tháng 10</option><option value="Tháng 11">Tháng 11</option><option value="Tháng 12">Tháng 12</option>
@@ -409,38 +409,33 @@
                                 <thead>
                                     <tr class="bg-gray-50 text-gray-500 uppercase text-[11px] font-bold border-b">
                                         <th class="p-4 px-6">Họ và tên giáo viên</th>
+                                        <th class="p-3 text-center">Hồ sơ (25đ)</th>
                                         <th class="p-3 text-center">Thao giảng (25đ)</th>
-                                        <th class="p-3 text-center">Hồ sơ giáo án (25đ)</th>
-                                        <th class="p-3 text-center">Nhiệm vụ giao (30đ)</th>
+                                        <th class="p-3 text-center">Nhiệm vụ (30đ)</th>
                                         <th class="p-3 text-center">Kỷ luật (20đ)</th>
                                         <th class="p-3 text-center bg-indigo-50/50">Tổng điểm</th>
-                                        <th class="p-4 px-6">Xếp loại thi đua</th>
+                                        <th class="p-3 text-center">Xếp loại</th>
+                                        <th class="p-4 text-center" x-show="isManager()">Thao tác chấm</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y text-sm">
                                     <template x-for="gv in nhanSu" :key="gv.HoTen">
                                         <tr class="hover:bg-indigo-50/30">
                                             <td class="p-4 px-6 font-semibold text-gray-900" x-text="gv.HoTen"></td>
+                                            <td class="p-3 text-center font-mono font-bold text-gray-700" x-text="getThiDua(gv.HoTen).HoSo + 'đ'"></td>
+                                            <td class="p-3 text-center font-mono font-bold text-gray-700" x-text="getThiDua(gv.HoTen).ThaoGiang + 'đ'"></td>
+                                            <td class="p-3 text-center font-mono font-bold text-gray-700" x-text="getThiDua(gv.HoTen).NhiemVu + 'đ'"></td>
+                                            <td class="p-3 text-center font-mono font-bold text-gray-700" x-text="getThiDua(gv.HoTen).KyLuat + 'đ'"></td>
+                                            <td class="p-3 text-center bg-indigo-50/30 font-bold text-indigo-700 font-mono text-base" x-text="getThiDua(gv.HoTen).TongDiem + 'đ'"></td>
                                             <td class="p-3 text-center">
-                                                <input type="number" min="0" max="25" x-model.number="getThiDua(gv.HoTen).ThaoGiang" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
+                                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold" 
+                                                      :class="getThiDua(gv.HoTen).XepLoai === 'Hoàn thành xuất sắc' ? 'bg-purple-100 text-purple-700' : (getThiDua(gv.HoTen).XepLoai === 'Hoàn thành tốt' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700')"
+                                                      x-text="getThiDua(gv.HoTen).XepLoai"></span>
                                             </td>
-                                            <td class="p-3 text-center">
-                                                <input type="number" min="0" max="25" x-model.number="getThiDua(gv.HoTen).HoSo" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
-                                            </td>
-                                            <td class="p-3 text-center">
-                                                <input type="number" min="0" max="30" x-model.number="getThiDua(gv.HoTen).NhiemVu" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
-                                            </td>
-                                            <td class="p-3 text-center">
-                                                <input type="number" min="0" max="20" x-model.number="getThiDua(gv.HoTen).KyLuat" @input="calcTotal(gv.HoTen)" :disabled="!isManager()" class="px-2 py-1 border rounded text-center text-xs w-16 bg-white font-mono disabled:bg-gray-100 disabled:text-gray-500">
-                                            </td>
-                                            <td class="p-3 text-center bg-indigo-50/30 font-bold text-indigo-700" x-text="getThiDua(gv.HoTen).TongDiem + 'đ'"></td>
-                                            <td class="p-4 px-6">
-                                                <select x-model="getThiDua(gv.HoTen).XepLoai" @change="saveThiDua()" :disabled="!isManager()" class="px-3 py-1 border rounded-lg text-xs font-semibold text-indigo-700 bg-white disabled:bg-gray-100 disabled:text-gray-500">
-                                                    <option value="Hoàn thành xuất sắc">Hoàn thành xuất sắc</option>
-                                                    <option value="Hoàn thành tốt">Hoàn thành tốt</option>
-                                                    <option value="Hoàn thành">Hoàn thành</option>
-                                                    <option value="Chưa hoàn thành">Chưa hoàn thành</option>
-                                                </select>
+                                            <td class="p-4 text-center" x-show="isManager()">
+                                                <button @click="openGradingModal(gv.HoTen)" class="px-3 py-1.5 bg-indigo-600 text-white font-semibold rounded-lg text-xs hover:bg-indigo-700 shadow-2xs">
+                                                    <i class="fa-solid fa-list-check mr-1"></i> Chấm tiêu chí
+                                                </button>
                                             </td>
                                         </tr>
                                     </template>
@@ -500,7 +495,106 @@
         </div>
     </div>
 
-    <!-- LOGIC JAVASCRIPT CHUẨN XÁC VỚI BẢNG MẬT KHẨU DỰ PHÒNG CỨNG -->
+    <!-- MODAL CHẤM ĐIỂM TIÊU CHÍ THI ĐUA -->
+    <div x-show="gradingModalOpen" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" style="display: none;">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 border border-indigo-100 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Chấm điểm thi đua theo tiêu chí</h3>
+                    <p class="text-xs text-indigo-600 font-semibold mt-0.5" x-text="gradingTeacher + ' - ' + selectedThang"></p>
+                </div>
+                <button @click="gradingModalOpen = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+
+            <div class="space-y-6 text-sm">
+                <!-- Tiêu chí 1: Hồ sơ & Giáo án (25đ) -->
+                <div class="p-4 bg-gray-50 rounded-2xl border space-y-3">
+                    <h4 class="font-bold text-gray-800 flex justify-between items-center">
+                        <span>1. Hồ sơ giáo án & Nền nếp (Tối đa 25 điểm)</span>
+                        <span class="text-indigo-600 font-mono" x-text="calcCriteriaGroup('hoso') + '/25đ'"></span>
+                    </h4>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.hoso_1" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Soạn KHBD chuẩn Công văn 5512, đúng hạn (+15đ)</p></div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.hoso_2" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Cập nhật sổ điểm, học bạ, nền nếp lên lớp đầy đủ, đúng giờ (+10đ)</p></div>
+                    </label>
+                </div>
+
+                <!-- Tiêu chí 2: Thao giảng & Dự giờ (25đ) -->
+                <div class="p-4 bg-gray-50 rounded-2xl border space-y-3">
+                    <h4 class="font-bold text-gray-800 flex justify-between items-center">
+                        <span>2. Thao giảng & Dự giờ chuyên môn (Tối đa 25 điểm)</span>
+                        <span class="text-indigo-600 font-mono" x-text="calcCriteriaGroup('thaogiang') + '/25đ'"></span>
+                    </h4>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.tg_1" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Hoàn thành định mức dự giờ chuyên môn theo quy định (+10đ)</p></div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.tg_2" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Dạy tiết thao giảng đạt chất lượng Giỏi/Khá (+15đ)</p></div>
+                    </label>
+                </div>
+
+                <!-- Tiêu chí 3: Nhiệm vụ & Khảo thí (30đ) -->
+                <div class="p-4 bg-gray-50 rounded-2xl border space-y-3">
+                    <h4 class="font-bold text-gray-800 flex justify-between items-center">
+                        <span>3. Nhiệm vụ chuyên môn & Khảo thí (Tối đa 30 điểm)</span>
+                        <span class="text-indigo-600 font-mono" x-text="calcCriteriaGroup('nhiemvu') + '/30đ'"></span>
+                    </h4>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.nv_1" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Hoàn thành đúng hạn nhiệm vụ ra đề kiểm tra, khảo thí (+15đ)</p></div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.nv_2" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Tham gia bồi dưỡng HSG / Phụ đạo / Hoạt động STEM (+10đ)</p></div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.nv_3" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Tích cực đóng góp tài nguyên vào Kho học liệu chung (+5đ)</p></div>
+                    </label>
+                </div>
+
+                <!-- Tiêu chí 4: Kỷ luật & Thi đua chung (20đ) -->
+                <div class="p-4 bg-gray-50 rounded-2xl border space-y-3">
+                    <h4 class="font-bold text-gray-800 flex justify-between items-center">
+                        <span>4. Kỷ luật lao động & Thi đua chung (Tối đa 20 điểm)</span>
+                        <span class="text-indigo-600 font-mono" x-text="calcCriteriaGroup('kyluat') + '/20đ'"></span>
+                    </h4>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.kl_1" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Chấp hành tốt kỷ luật lao động, nội quy cơ quan (+10đ)</p></div>
+                    </label>
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="tempCriteria.kl_2" class="mt-1 w-4 h-4 text-indigo-600 rounded">
+                        <div><p class="font-semibold text-gray-900">Tham gia đầy đủ các buổi sinh hoạt tổ, họp hội đồng (+10đ)</p></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="p-4 bg-indigo-50 rounded-2xl flex justify-between items-center border border-indigo-100">
+                <div>
+                    <p class="text-xs font-bold text-indigo-600 uppercase">Tổng điểm dự kiến:</p>
+                    <h4 class="text-2xl font-bold text-indigo-950 font-mono" x-text="calcTempTotal() + ' / 100 điểm'"></h4>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold text-indigo-600 uppercase">Xếp loại tự động:</p>
+                    <span class="inline-block mt-1 px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold" x-text="calcTempRank(calcTempTotal())"></span>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button @click="gradingModalOpen = false" class="px-5 py-2.5 border rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100">Hủy</button>
+                <button @click="saveGrading()" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 shadow-md">Lưu điểm thi đua</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC JAVASCRIPT -->
     <script>
         const DEFAULT_PASSWORDS = {
             'Tô Văn Hóa': '0983774975',
@@ -565,6 +659,9 @@
                 newCM: { GiaoVien: '', NhiemVu: '', TKB: '' },
 
                 thiDuaData: [],
+                gradingModalOpen: false,
+                gradingTeacher: '',
+                tempCriteria: { hoso_1: true, hoso_2: true, tg_1: true, tg_2: true, nv_1: true, nv_2: true, nv_3: true, kl_1: true, kl_2: true },
 
                 initApp() {
                     this.setDefaultMonday();
@@ -583,12 +680,13 @@
                                 this.thiDuaData.push({
                                     Thang: m,
                                     HoTen: gv.HoTen,
-                                    ThaoGiang: 23,
-                                    HoSo: 24,
-                                    NhiemVu: 28,
-                                    KyLuat: 19,
-                                    TongDiem: 94,
-                                    XepLoai: 'Hoàn thành xuất sắc'
+                                    HoSo: 25,
+                                    ThaoGiang: 25,
+                                    NhiemVu: 30,
+                                    KyLuat: 20,
+                                    TongDiem: 100,
+                                    XepLoai: 'Hoàn thành xuất sắc',
+                                    criteria: { hoso_1: true, hoso_2: true, tg_1: true, tg_2: true, nv_1: true, nv_2: true, nv_3: true, kl_1: true, kl_2: true }
                                 });
                             });
                         });
@@ -656,11 +754,9 @@
                     
                     const inputClean = String(this.inputPassword).trim();
                     const defaultPass = DEFAULT_PASSWORDS[this.selectedLoginName] || '';
-                    
                     const gv = this.nhanSu.find(x => x.HoTen === this.selectedLoginName);
                     const sheetPass = gv ? String(gv.MatKhau || gv.DienThoai || '').trim() : '';
 
-                    // Kiểm tra khớp với mật khẩu mặc định (có số 0 hoặc không có số 0) hoặc mật khẩu cá nhân đổi mới
                     const isMatch = (inputClean === defaultPass) || 
                                     (inputClean === sheetPass) || 
                                     (inputClean.replace(/^0+/, '') === defaultPass.replace(/^0+/, '')) ||
@@ -727,17 +823,67 @@
                     if (!Array.isArray(this.thiDuaData)) this.thiDuaData = [];
                     let found = this.thiDuaData.find(x => x.Thang === this.selectedThang && x.HoTen === hoTen);
                     if (!found) {
-                        found = { Thang: this.selectedThang, HoTen: hoTen, ThaoGiang: 23, HoSo: 24, NhiemVu: 28, KyLuat: 19, TongDiem: 94, XepLoai: 'Hoàn thành xuất sắc' };
+                        found = { 
+                            Thang: this.selectedThang, 
+                            HoTen: hoTen, 
+                            HoSo: 25, 
+                            ThaoGiang: 25, 
+                            NhiemVu: 30, 
+                            KyLuat: 20, 
+                            TongDiem: 100, 
+                            XepLoai: 'Hoàn thành xuất sắc',
+                            criteria: { hoso_1: true, hoso_2: true, tg_1: true, tg_2: true, nv_1: true, nv_2: true, nv_3: true, kl_1: true, kl_2: true }
+                        };
                         this.thiDuaData.push(found);
                     }
                     return found;
                 },
 
-                calcTotal(hoTen) {
-                    let td = this.getThiDua(hoTen);
-                    td.TongDiem = Number(td.ThaoGiang || 0) + Number(td.HoSo || 0) + Number(td.NhiemVu || 0) + Number(td.KyLuat || 0);
-                    this.saveThiDua();
+                openGradingModal(hoTen) {
+                    this.gradingTeacher = hoTen;
+                    let current = this.getThiDua(hoTen);
+                    if (current.criteria) {
+                        this.tempCriteria = JSON.parse(JSON.stringify(current.criteria));
+                    } else {
+                        this.tempCriteria = { hoso_1: true, hoso_2: true, tg_1: true, tg_2: true, nv_1: true, nv_2: true, nv_3: true, kl_1: true, kl_2: true };
+                    }
+                    this.gradingModalOpen = true;
+                },
+
+                calcCriteriaGroup(group) {
+                    let tc = this.tempCriteria;
+                    if (group === 'hoso') return (tc.hoso_1 ? 15 : 0) + (tc.hoso_2 ? 10 : 0);
+                    if (group === 'thaogiang') return (tc.tg_1 ? 10 : 0) + (tc.tg_2 ? 15 : 0);
+                    if (group === 'nhiemvu') return (tc.nv_1 ? 15 : 0) + (tc.nv_2 ? 10 : 0) + (tc.nv_3 ? 5 : 0);
+                    if (group === 'kyluat') return (tc.kl_1 ? 10 : 0) + (tc.kl_2 ? 10 : 0);
+                    return 0;
+                },
+
+                calcTempTotal() {
+                    return this.calcCriteriaGroup('hoso') + this.calcCriteriaGroup('thaogiang') + this.calcCriteriaGroup('nhiemvu') + this.calcCriteriaGroup('kyluat');
+                },
+
+                calcTempRank(total) {
+                    if (total >= 90) return 'Hoàn thành xuất sắc';
+                    if (total >= 75) return 'Hoàn thành tốt';
+                    if (total >= 60) return 'Hoàn thành';
+                    return 'Chưa hoàn thành';
+                },
+
+                saveGrading() {
+                    let td = this.getThiDua(this.gradingTeacher);
+                    td.criteria = JSON.parse(JSON.stringify(this.tempCriteria));
+                    td.HoSo = this.calcCriteriaGroup('hoso');
+                    td.ThaoGiang = this.calcCriteriaGroup('thaogiang');
+                    td.NhiemVu = this.calcCriteriaGroup('nhiemvu');
+                    td.KyLuat = this.calcCriteriaGroup('kyluat');
+                    td.TongDiem = this.calcTempTotal();
+                    td.XepLoai = this.calcTempRank(td.TongDiem);
+
+                    this.syncSheet('ThiDua', this.thiDuaData);
                     this.updateThiDuaChart();
+                    this.gradingModalOpen = false;
+                    alert('Đã chấm điểm thi đua và cập nhật xếp loại thành công!');
                 },
 
                 saveThiDua() {
@@ -875,7 +1021,7 @@
                             datasets: [{
                                 label: 'Tổng điểm thi đua (Thang điểm 100)',
                                 data: scores,
-                                backgroundColor: scores.map(s => s >= 90 ? 'rgba(16, 185, 129, 0.8)' : (s >= 59 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)')),
+                                backgroundColor: scores.map(s => s >= 90 ? 'rgba(16, 185, 129, 0.8)' : (s >= 75 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)')),
                                 borderRadius: 8
                             }]
                         },
