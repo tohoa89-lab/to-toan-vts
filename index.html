@@ -10,6 +10,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (XLSX Parser cho file Excel) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -378,40 +380,90 @@
                     </div>
                 </div>
 
-                <!-- 6. PHÂN CÔNG CHUYÊN MÔN & TKB -->
+                <!-- 6. PHÂN CÔNG CHUYÊN MÔN & THỜI KHÓA BIỂU (HỖ TRỢ TẢI LÊN EXCEL & JSON) -->
                 <div x-show="activeTab === 'chuyenmon_tkb'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 space-y-6">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-gray-900">Phân công chuyên môn & Thời khóa biểu theo nhân sự</h3>
-                            <span class="text-xs text-gray-500" x-show="!isManager()">(Chế độ xem)</span>
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">Phân công chuyên môn & Thời khóa biểu toàn tổ</h3>
+                                <p class="text-xs text-gray-500 mt-0.5">Hiển thị trực quan thời khóa biểu của từng thành viên tổ Toán theo tuần.</p>
+                            </div>
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-600 uppercase mr-2">Chọn tuần xem TKB:</label>
+                                    <select x-model="selectedTKBWeek" class="px-3 py-2 border rounded-xl text-sm font-semibold bg-white text-indigo-700 shadow-2xs">
+                                        <option value="Tuần 8 (19/10 - 25/10/2026)">Tuần 8 (19/10 - 25/10/2026)</option>
+                                        <option value="Tuần 9 (26/10 - 01/11/2026)">Tuần 9 (26/10 - 01/11/2026)</option>
+                                        <option value="Tuần 10 (02/11 - 08/11/2026)">Tuần 10 (02/11 - 08/11/2026)</option>
+                                        <option value="Tuần 11 (09/11 - 15/11/2026)">Tuần 11 (09/11 - 15/11/2026)</option>
+                                        <option value="Tuần 12 (16/11 - 22/11/2026)">Tuần 12 (16/11 - 22/11/2026)</option>
+                                    </select>
+                                </div>
+                                <div x-show="isManager()">
+                                    <label class="cursor-pointer px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 shadow-sm inline-flex items-center gap-2">
+                                        <i class="fa-solid fa-file-excel"></i> Tải file Excel / JSON TKB
+                                        <input type="file" accept=".xlsx, .xls, .csv, .json" @change="uploadTKBFile($event)" class="hidden">
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200" x-show="isManager()">
+
+                        <!-- Thêm phân công thủ công nhanh (Dành cho Ban chủ nhiệm) -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200" x-show="isManager()">
                             <select x-model="newCM.GiaoVien" class="px-4 py-2 border rounded-lg text-sm bg-white">
                                 <option value="">-- Chọn giáo viên --</option>
                                 <template x-for="gv in nhanSu"><option :value="gv.HoTen" x-text="gv.HoTen"></option></template>
                             </select>
-                            <input type="text" x-model="newCM.NhiemVu" placeholder="Lớp giảng dạy / Kiêm nhiệm..." class="px-4 py-2 border rounded-lg text-sm bg-white">
-                            <div class="flex gap-2">
-                                <input type="text" x-model="newCM.TKB" placeholder="Lịch trực quan / TKB..." class="flex-1 px-4 py-2 border rounded-lg text-sm bg-white">
-                                <button @click="addChuyenMon()" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg text-sm">Lưu</button>
-                            </div>
+                            <input type="text" x-model="newCM.NhiemVu" placeholder="Nhiệm vụ (Lớp giảng dạy / Kiêm nhiệm)..." class="px-4 py-2 border rounded-lg text-sm bg-white">
+                            <input type="text" x-model="newCM.TKB" placeholder="Chi tiết TKB trong tuần..." class="px-4 py-2 border rounded-lg text-sm bg-white">
+                            <button @click="addChuyenMon()" class="bg-indigo-600 text-white font-semibold py-2 rounded-lg text-sm">Lưu phân công</button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <template x-for="(cm, idx) in chuyenMonList" :key="idx">
-                                <div class="p-5 border rounded-xl bg-white shadow-2xs space-y-2">
-                                    <div class="flex justify-between items-center">
-                                        <h4 class="font-bold text-indigo-900" x-text="cm.GiaoVien"></h4>
-                                        <button @click="deleteChuyenMon(idx)" x-show="isManager()" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+
+                        <!-- KHU VỰC HIỂN THỊ TRỰC QUAN TKB TỪNG THÀNH VIÊN TRÊN MỘT MÀN HÌNH -->
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-week text-indigo-600"></i> Bảng tổng hợp TKB các thành viên trong <span class="text-indigo-600" x-text="selectedTKBWeek"></span>
+                            </h4>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <template x-for="gv in nhanSu" :key="gv.HoTen">
+                                    <div class="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 space-y-3 hover:border-indigo-300 transition">
+                                        <div class="flex justify-between items-center border-b pb-2.5">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm" x-text="gv.HoTen.split(' ').pop().charAt(0)"></div>
+                                                <div>
+                                                    <h5 class="font-bold text-gray-900 text-base" x-text="gv.HoTen"></h5>
+                                                    <span class="text-[11px] px-2 py-0.5 rounded font-semibold" :class="gv.ChucVu === 'Tổ trưởng' ? 'bg-purple-100 text-purple-700' : (gv.ChucVu === 'Tổ phó' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600')" x-text="gv.ChucVu"></span>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-xs text-gray-400 font-mono" x-text="gv.DienThoai"></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="space-y-2 text-sm">
+                                            <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/60">
+                                                <p class="text-xs font-bold text-indigo-800 uppercase mb-1">Nhiệm vụ phân công chuyên môn:</p>
+                                                <p class="text-gray-700 font-medium" x-text="getTeacherCM(gv.HoTen).NhiemVu || 'Chưa cập nhật nhiệm vụ lớp giảng dạy.'"></p>
+                                            </div>
+
+                                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-200/60">
+                                                <p class="text-xs font-bold text-gray-600 uppercase mb-1">Thời khóa biểu chi tiết tuần:</p>
+                                                <p class="text-gray-800 font-mono text-xs whitespace-pre-line" x-text="getTeacherCM(gv.HoTen).TKB || 'Chưa cập nhật lịch TKB chi tiết cho tuần này.'"></p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex justify-end gap-2 pt-1" x-show="isManager()">
+                                            <button @click="editTeacherCM(gv.HoTen)" class="px-3 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg text-xs font-semibold border border-amber-200">Cập nhật TKB</button>
+                                        </div>
                                     </div>
-                                    <p class="text-sm text-gray-700"><strong>Nhiệm vụ:</strong> <span x-text="cm.NhiemVu"></span></p>
-                                    <p class="text-sm text-gray-600 bg-gray-50 p-2 rounded border"><strong>Thời khóa biểu / Lịch:</strong> <span x-text="cm.TKB"></span></p>
-                                </div>
-                            </template>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 7. BÁO CÁO THI ĐUA THÁNG (LƯỢNG HÓA CHUẨN DỰ THẢO A1-A6, B1-B18) -->
+                <!-- 7. BÁO CÁO THI ĐUA THÁNG -->
                 <div x-show="activeTab === 'thidua'" class="space-y-6">
                     <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex justify-between items-center">
                         <div>
@@ -804,10 +856,87 @@
                 filterLoai: '',
                 filterKhoi: '',
 
+                // PHÂN CÔNG CHUYÊN MÔN & TKB THEO TUẦN
+                selectedTKBWeek: 'Tuần 8 (19/10 - 25/10/2026)',
                 chuyenMonList: [
-                    { GiaoVien: 'Tô Văn Hóa', NhiemVu: 'Dạy Toán 12A1, 11A1 - Tổ trưởng', TKB: 'Thứ 2: Tiết 1,2 (12A1) | Thứ 3: Tiết 3 (11A1)' }
+                    { Tuan: 'Tuần 8 (19/10 - 25/10/2026)', GiaoVien: 'Tô Văn Hóa', NhiemVu: 'Dạy Toán 12A1, 11A1 - Tổ trưởng', TKB: 'Thứ 2: Tiết 1,2 (12A1) | Thứ 3: Tiết 3 (11A1) | Thứ 5: Tiết 4 (12A1)' },
+                    { Tuan: 'Tuần 8 (19/10 - 25/10/2026)', GiaoVien: 'Phạm Thị Huệ', NhiemVu: 'Dạy Toán 11A2, 10A1 - Tổ phó', TKB: 'Thứ 2: Tiết 3 (11A2) | Thứ 4: Tiết 1,2 (10A1)' }
                 ],
                 newCM: { GiaoVien: '', NhiemVu: '', TKB: '' },
+
+                getTeacherCM(hoTen) {
+                    let found = this.chuyenMonList.find(x => x.GiaoVien === hoTen && x.Tuan === this.selectedTKBWeek);
+                    return found || { GiaoVien: hoTen, Tuan: this.selectedTKBWeek, NhiemVu: '', TKB: '' };
+                },
+
+                editTeacherCM(hoTen) {
+                    let current = this.getTeacherCM(hoTen);
+                    let newNhiemVu = prompt(`Nhập nhiệm vụ (lớp giảng dạy) cho thầy/cô ${hoTen}:`, current.NhiemVu);
+                    if (newNhiemVu === null) return;
+                    let newTKB = prompt(`Nhập lịch TKB chi tiết cho thầy/cô ${hoTen} (${this.selectedTKBWeek}):`, current.TKB);
+                    if (newTKB === null) return;
+
+                    this.chuyenMonList = this.chuyenMonList.filter(x => !(x.GiaoVien === hoTen && x.Tuan === this.selectedTKBWeek));
+                    this.chuyenMonList.push({
+                        Tuan: this.selectedTKBWeek,
+                        GiaoVien: hoTen,
+                        NhiemVu: newNhiemVu,
+                        TKB: newTKB
+                    });
+                    this.syncSheet('ChuyenMonTKB', this.chuyenMonList);
+                },
+
+                uploadTKBFile(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+
+                    if (file.name.endsWith('.json')) {
+                        reader.onload = (e) => {
+                            try {
+                                const importedData = JSON.parse(e.target.result);
+                                if (Array.isArray(importedData)) {
+                                    this.chuyenMonList = importedData;
+                                    this.syncSheet('ChuyenMonTKB', this.chuyenMonList);
+                                    alert('Đã cập nhật TKB từ file JSON thành công!');
+                                } else {
+                                    alert('Định dạng file JSON không hợp lệ!');
+                                }
+                            } catch (err) {
+                                alert('Lỗi đọc file JSON: ' + err.message);
+                            }
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        // Đọc file Excel (.xlsx, .xls) hoặc CSV
+                        reader.onload = (e) => {
+                            try {
+                                const data = new Uint8Array(e.target.result);
+                                const workbook = XLSX.read(data, { type: 'array' });
+                                const firstSheetName = workbook.SheetNames[0];
+                                const worksheet = workbook.Sheets[firstSheetName];
+                                const jsonSheet = XLSX.utils.sheet_to_json(worksheet);
+
+                                if (jsonSheet.length > 0) {
+                                    this.chuyenMonList = jsonSheet.map(item => ({
+                                        Tuan: item.Tuan || item['Tuần'] || this.selectedTKBWeek,
+                                        GiaoVien: item.GiaoVien || item['Giáo viên'] || item['Họ tên'] || '',
+                                        NhiemVu: item.NhiemVu || item['Nhiệm vụ'] || '',
+                                        TKB: item.TKB || item['Thời khóa biểu'] || item['Lịch'] || ''
+                                    })).filter(x => x.GiaoVien);
+
+                                    this.syncSheet('ChuyenMonTKB', this.chuyenMonList);
+                                    alert(`Đã nhập dữ liệu thành công từ file Excel (${this.chuyenMonList.length} bản ghi)!`);
+                                } else {
+                                    alert('File Excel không có dữ liệu hoặc sai tên cột tiêu đề!');
+                                }
+                            } catch (err) {
+                                alert('Lỗi đọc file Excel: ' + err.message);
+                            }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    }
+                },
 
                 thiDuaData: [],
                 gradingModalOpen: false,
@@ -1035,9 +1164,9 @@
 
                 calcTempRank(total) {
                     let tc = this.tempCriteria;
-                    let b4_ok = Number(tc.b4||0) >= 3.5; // >= 70% của 5đ
-                    let b5_ok = Number(tc.b5||0) >= 4.9; // >= 70% của 7đ
-                    let b9_ok = Number(tc.b9||0) >= 3.5; // >= 70% của 5đ
+                    let b4_ok = Number(tc.b4||0) >= 3.5; 
+                    let b5_ok = Number(tc.b5||0) >= 4.9; 
+                    let b9_ok = Number(tc.b9||0) >= 3.5; 
 
                     if (total >= 90 && b4_ok && b5_ok && b9_ok) return 'Hoàn thành xuất sắc nhiệm vụ';
                     if (total >= 70) return 'Hoàn thành tốt nhiệm vụ';
@@ -1094,13 +1223,11 @@
                 addChuyenMon() {
                     if(!this.isManager()) { alert('Bạn không có quyền thực hiện thao tác này!'); return; }
                     if(!this.newCM.GiaoVien) return;
-                    this.chuyenMonList.push({...this.newCM});
+                    this.chuyenMonList.push({
+                        Tuan: this.selectedTKBWeek,
+                        ...this.newCM
+                    });
                     this.newCM = { GiaoVien: '', NhiemVu: '', TKB: '' };
-                    this.syncSheet('ChuyenMonTKB', this.chuyenMonList);
-                },
-                deleteChuyenMon(idx) {
-                    if(!this.isManager()) { alert('Bạn không có quyền thực hiện thao tác này!'); return; }
-                    this.chuyenMonList.splice(idx, 1);
                     this.syncSheet('ChuyenMonTKB', this.chuyenMonList);
                 },
 
